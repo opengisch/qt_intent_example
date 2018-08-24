@@ -5,6 +5,24 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+                <!--<data
+                      android:scheme="file"
+                      android:host="*"
+                      android:mimeType="application/qgis"
+                      android:pathPattern=".*\\.pdf" />
+                -->
+                <!--
+                <data android:mimeType="file/qgis"/>
+                <data android:scheme="" />
+                <data android:scheme="file" />
+                <data android:scheme="ftp" />
+                <data android:scheme="content" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="*" />
+
+                <data android:pathPattern=".*\\.pdf" />
+                -->
             </intent-filter>
 
             <!-- Application arguments -->
