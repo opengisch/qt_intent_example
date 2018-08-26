@@ -108,10 +108,9 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         // this provider.
         final MatrixCursor result = new MatrixCursor(resolveRootProjection(projection));
 
+        // TODO
         // If the user is not using QField, return an empty root cursor.  This removes our provider from
         // the list entirely.
-        // TODO
-
         //if (!getContext().getPackageName().equals("ch.opengis.qfield")) {
         //   return result;
         //}
@@ -179,7 +178,7 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         if (f.isDirectory())
           scanFiles(f, result);
         if (f.isFile() && (f.getPath().endsWith(".qgs"))) {
-            //Add to your list
+            includeFile(result, null, f.getParentFile());
             includeFile(result, null, f);
            }
         }
@@ -225,26 +224,8 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         if (file.isDirectory()) {
             return Document.MIME_TYPE_DIR;
         } else {
-            return getTypeForName(file.getName());
+            return "application/x-qgis-project";
         }
-    }
-
-    /**
-     * Get the MIME data type of a document, given its filename.
-     *
-     * @param name the filename of the document
-     * @return the MIME data type of a document
-     */
-    private static String getTypeForName(String name) {
-        final int lastDot = name.lastIndexOf('.');
-        if (lastDot >= 0) {
-            final String extension = name.substring(lastDot + 1);
-            final String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-            if (mime != null) {
-                return mime;
-            }
-        }
-        return "application/octet-stream";
     }
 
     /**
@@ -256,9 +237,7 @@ public class QgsDocumentsProvider extends DocumentsProvider {
      */
     private String getChildMimeTypes(File parent) {
         Set<String> mimeTypes = new HashSet<String>();
-        mimeTypes.add("image/*");
-        mimeTypes.add("text/*");
-        mimeTypes.add("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        mimeTypes.add("application/x-qgis-project");
 
         // Flatten the list into a string and insert newlines between the MIME type strings.
         StringBuilder mimeTypesString = new StringBuilder();
