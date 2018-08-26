@@ -40,6 +40,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FilenameFilter;
@@ -49,6 +50,11 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Set;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
+import javax.xml.xpath.XPathExpressionException;
+import org.xml.sax.InputSource;
 
 /**
  * Manages documents and exposes them to the Android system for sharing.
@@ -90,6 +96,11 @@ public class QgsDocumentsProvider extends DocumentsProvider {
     // does not need to be an existing file system directory.  For example, a tag-based document
     // provider might return a directory containing all tags, represented as child directories.
     private File mBaseDir;
+
+    // A set to store the parent direcories of the qgs files, to avoid to add them more times
+    private Set<String> parentDirectories = new HashSet<String>();
+        
+    
 
     @Override
     public boolean onCreate() {
@@ -163,27 +174,50 @@ public class QgsDocumentsProvider extends DocumentsProvider {
                                       String sortOrder) throws FileNotFoundException {
 
         Log.v(TAG, "queryDocument");
-        final MatrixCursor result = new MatrixCursor(resolveDocumentProjection(projection));
-        File root = Environment.getExternalStorageDirectory();
-        String rootPath= root.getPath();
 
-        scanFiles(new File(rootPath), result);
+        Log.v(TAG, "parentDocumentId "+parentDocumentId);
+
+        parentDirectories.clear();
+        
+        final MatrixCursor result = new MatrixCursor(resolveDocumentProjection(projection));
+
+        if(parentDocumentId.endsWith(getContext().getPackageName()+"/files")){
+                
+            File root = Environment.getExternalStorageDirectory();
+            String rootPath= root.getPath();
+            scanFiles(new File(rootPath), result);
+        }else{
+            listFiles(new File(parentDocumentId), result);
+        }
 
         return result;
     }
 
     public void scanFiles(File file, MatrixCursor result) throws FileNotFoundException {
-    File[] fileArray = file.listFiles();
-    for (File f : fileArray){
-        if (f.isDirectory())
-          scanFiles(f, result);
-        if (f.isFile() && (f.getPath().endsWith(".qgs"))) {
-            includeFile(result, null, f.getParentFile());
-            includeFile(result, null, f);
-           }
+        File[] fileArray = file.listFiles();
+        for (File f : fileArray){
+            if (f.isDirectory())
+            scanFiles(f, result);
+            if (f.isFile() && (f.getPath().endsWith(".qgs"))) {
+                includeFile(result, null, f.getParentFile());
+
+                //if the file is in the root directory, add it
+                if (f.getParentFile() == file){
+                    includeFile(result, null, f);
+                }
+            }
         }
     }
 
+    public void listFiles(File file, MatrixCursor result) throws FileNotFoundException{
+        File[] fileArray = file.listFiles();
+        for (File f : fileArray){
+            if (f.isFile() && f.getPath().endsWith(".qgs")) {
+                includeFile(result, null, f);
+            }
+        }
+    }
+        
     @Override
     public ParcelFileDescriptor openDocument(final String documentId, final String mode,
                                              CancellationSignal signal)
@@ -270,6 +304,7 @@ public class QgsDocumentsProvider extends DocumentsProvider {
      */
     private void includeFile(MatrixCursor result, String docId, File file)
             throws FileNotFoundException {
+
         if (docId == null) {
             docId = getDocIdForFile(file);
         } else {
@@ -277,24 +312,15 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         }
 
         int flags = 0;
-
-        if (file.isDirectory()) {
-            // Request the folder to lay out as a grid rather than a list. This also allows a larger
-            // thumbnail to be displayed for each image.
-            //            flags |= Document.FLAG_DIR_PREFERS_GRID;
-
-            // Add FLAG_DIR_SUPPORTS_CREATE if the file is a writable directory.
-            if (file.isDirectory() && file.canWrite()) {
-                flags |= Document.FLAG_DIR_SUPPORTS_CREATE;
-            }
-        } else if (file.canWrite()) {
-            // If the file is writable set FLAG_SUPPORTS_WRITE and
-            // FLAG_SUPPORTS_DELETE
-            flags |= Document.FLAG_SUPPORTS_WRITE;
-            flags |= Document.FLAG_SUPPORTS_DELETE;
+        String displayName = file.getName();
+        if (!file.isDirectory()) {
+            displayName = qgisName(file);
         }
 
-        final String displayName = file.getName();
+        if (file.isDirectory() && parentDirectories.contains(docId)){
+            return;
+        }
+
         final String mimeType = getTypeForFile(file);
 
         final MatrixCursor.RowBuilder row = result.newRow();
@@ -307,6 +333,8 @@ public class QgsDocumentsProvider extends DocumentsProvider {
 
         // Add a custom icon
         row.add(Document.COLUMN_ICON, R.drawable.qfield);
+
+        parentDirectories.add(docId);
     }
 
     /**
@@ -321,20 +349,26 @@ public class QgsDocumentsProvider extends DocumentsProvider {
     }
 
     /**
-
      * function to determine QGIS project name.
      */
-    private string qgisName(File file)
-    {
+    private String qgisName(File file) throws FileNotFoundException {
+
+        Log.v(TAG, "in qgisName "+file.getName());
+        
         InputStream is = new FileInputStream(file);
         InputSource inputSrc = new InputSource(is);
 
-        XPath xpath = XPathFactory.newInstance().newXPath();
-        String expression = "//qgis/title/";
-        NodeList nodes = (NodeList)xpath.evaluate(expression, inputSrc, XPathConstants.NODESET);
-        for (int i=0; i < nodes.getLength(); i++){
-            NamedNodeMap node = nodes.item(i).getAttributes();
-            Log.v(TAG, node.toString());
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        String expression = "/qgis/title";
+        String projectName = "";
+        try{
+           projectName = xPath.compile(expression).evaluate(inputSrc);
+        }catch(XPathExpressionException e){
+            Log.v(TAG, "in catch " + e);
         }
+        if (projectName.trim().equals("")){
+            projectName = file.getName();
+        }
+        return projectName;
     }
 }
