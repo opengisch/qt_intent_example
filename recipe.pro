@@ -23,6 +23,8 @@ HEADERS += \
 DISTFILES += \
     android/AndroidManifest.xml \
     android/res/values/libs.xml \
-    android/build.gradle
+    android/build.gradle \
+    android/res/src/ch/opengis/proba/QgsDocumentsProvider.java \
+    android/res/values/strings.xml
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android

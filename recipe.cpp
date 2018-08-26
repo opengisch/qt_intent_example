@@ -72,31 +72,9 @@ void Recipe::createTimer(const QString &message) const
       QAndroidJniObject intent = QAndroidJniObject( "android/content/Intent", "(Ljava/lang/String;)V", actionOpenDocument.object<jstring>() );
       intent.callObjectMethod( "addCategory", "(Ljava/lang/String;)Landroid/content/Intent;", categoryOpenable.object<jstring>() );
 
-      // static void addFileType(String extension, int fileType, String mimeType
-
-      //QAndroidJniObject extension = QAndroidJniObject::fromString( QStringLiteral( "QGS" ) );
-      //jint fileType = 103;
-      QAndroidJniObject mimeType = QAndroidJniObject::fromString( QStringLiteral( "application/xml" ) );
-      //QAndroidJniObject uri = QAndroidJniObject::fromString( QStringLiteral( "file://*.qgs" ) );
-
-      //QAndroidJniObject parseString = QAndroidJniObject::fromString( QStringLiteral( "file://*.qgs" ) );
-
-      //QAndroidJniObject uri = QAndroidJniObject::callStaticObjectMethod("android/net/Uri",
-       //                                                                 "parse",
-        //                                                                "(Ljava/lang/String;)Landroid/net/Uri;",
-         //                                                               parseString.object<jstring>());
-
-      //QAndroidJniObject::callStaticObjectMethod("android/media/MediaFile", "addFileType", "(Ljava/lang/String;I;Ljava/lang/String;)V;",
-      //                                          extension.object<jstring>(),
-      //                                          fileType,
-      //                                          mimeType.object<jstring>());
-
-      //QAndroidJniObject mime = QAndroidJniObject::fromString( QStringLiteral( "application/qgs" ) );
+      QAndroidJniObject mimeType = QAndroidJniObject::fromString( QStringLiteral( "*/*" ) );
       intent.callObjectMethod( "setType", "(Ljava/lang/String;)Landroid/content/Intent;", mimeType.object<jstring>() );
 
-      //intent.setDataAndType(Uri.parse("file://" + getFilesDir() + "/abc.pdf"), "application/pdf");
-
-      //intent.callObjectMethod( "setDataAndType", "(Landroid/net/Uri;Ljava/lang/String;)Landroid/content/Intent;", uri.object<jobject>() , mimeType.object<jstring>() );
       QtAndroid::startActivity( intent.object<jobject>(), 12);
 
 
