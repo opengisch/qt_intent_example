@@ -15,7 +15,7 @@
  */
 
 
-package ch.opengis.qfield;
+package ch.opengis.qfield_recipe;
 
 //import ch.opengis.qfield.R;
 
