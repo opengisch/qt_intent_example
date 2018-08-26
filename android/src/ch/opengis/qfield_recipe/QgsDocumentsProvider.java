@@ -319,4 +319,22 @@ public class QgsDocumentsProvider extends DocumentsProvider {
     private File getFileForDocId(String docId) throws FileNotFoundException {
         return new File(docId);
     }
- }
+
+    /**
+
+     * function to determine QGIS project name.
+     */
+    private string qgisName(File file)
+    {
+        InputStream is = new FileInputStream(file);
+        InputSource inputSrc = new InputSource(is);
+
+        XPath xpath = XPathFactory.newInstance().newXPath();
+        String expression = "//qgis/title/";
+        NodeList nodes = (NodeList)xpath.evaluate(expression, inputSrc, XPathConstants.NODESET);
+        for (int i=0; i < nodes.getLength(); i++){
+            NamedNodeMap node = nodes.item(i).getAttributes();
+            Log.v(TAG, node.toString());
+        }
+    }
+}
