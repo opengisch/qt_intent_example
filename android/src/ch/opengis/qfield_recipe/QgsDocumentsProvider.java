@@ -97,10 +97,9 @@ public class QgsDocumentsProvider extends DocumentsProvider {
     // provider might return a directory containing all tags, represented as child directories.
     private File mBaseDir;
 
-    // A set to store the parent direcories of the qgs files, to avoid to add them more times
+    // A set to store the parent direcories of the qgs files, to ensure that we
+    // add them only once
     private Set<String> parentDirectories = new HashSet<String>();
-        
-    
 
     @Override
     public boolean onCreate() {
@@ -160,7 +159,7 @@ public class QgsDocumentsProvider extends DocumentsProvider {
 
     @Override
     public Cursor queryDocument(String documentId, String[] projection)
-            throws FileNotFoundException {
+        throws FileNotFoundException {
         Log.v(TAG, "queryDocument");
 
         // Create a cursor with the requested projection, or the default projection.
@@ -172,10 +171,7 @@ public class QgsDocumentsProvider extends DocumentsProvider {
     @Override
     public Cursor queryChildDocuments(String parentDocumentId, String[] projection,
                                       String sortOrder) throws FileNotFoundException {
-
         Log.v(TAG, "queryDocument");
-
-        Log.v(TAG, "parentDocumentId "+parentDocumentId);
 
         parentDirectories.clear();
         
@@ -193,11 +189,18 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         return result;
     }
 
+    /**
+     * Scan recursively all the directories to find .qgs files and add the qgs
+     * files and the very parent directory of each qgs file to the matrix cursor
+     * @param file the starting root of the search
+     * @param result the matrix cursor  
+     */
+    
     public void scanFiles(File file, MatrixCursor result) throws FileNotFoundException {
         File[] fileArray = file.listFiles();
         for (File f : fileArray){
             if (f.isDirectory())
-            scanFiles(f, result);
+                scanFiles(f, result);
             if (f.isFile() && (f.getPath().endsWith(".qgs"))) {
                 includeFile(result, null, f.getParentFile());
 
@@ -209,6 +212,11 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         }
     }
 
+    /**
+     * Scan a directory to find .qgs files and add them to the matrix cursor
+     * @param file the directory to be scanned
+     * @param result the matrix cursor
+     */
     public void listFiles(File file, MatrixCursor result) throws FileNotFoundException{
         File[] fileArray = file.listFiles();
         for (File f : fileArray){
@@ -232,7 +240,6 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         final int accessMode = ParcelFileDescriptor.parseMode(mode);
 
         return ParcelFileDescriptor.open(file, accessMode);
-
     }
 
     /**
@@ -349,12 +356,12 @@ public class QgsDocumentsProvider extends DocumentsProvider {
     }
 
     /**
-     * function to determine QGIS project name.
+     * @param file the qgs file
+     * @return a String with the title of the QGIS project or the file name if
+     * no title is defined
      */
     private String qgisName(File file) throws FileNotFoundException {
 
-        Log.v(TAG, "in qgisName "+file.getName());
-        
         InputStream is = new FileInputStream(file);
         InputSource inputSrc = new InputSource(is);
 
@@ -364,7 +371,7 @@ public class QgsDocumentsProvider extends DocumentsProvider {
         try{
            projectName = xPath.compile(expression).evaluate(inputSrc);
         }catch(XPathExpressionException e){
-            Log.v(TAG, "in catch " + e);
+
         }
         if (projectName.trim().equals("")){
             projectName = file.getName();
